@@ -70,10 +70,10 @@ select p.nombre as 'Nombre producto', p.precio 'Precio producto', f.nombre 'Fabr
 select p.nombre as 'Nombre producto', p.precio 'Precio producto', f.nombre 'Fabricante', f.codigo as 'Codigo fabricante' from producto as p join fabricante as f on f.codigo = p.codigo_fabricante;
 
 -- Retorna el nom del producte, el seu preu i el nom del seu fabricant, del producte més barat.
-select p.nombre as 'Nombre producto', p.precio 'Precio producto', f.nombre 'Fabricante'from producto as p join fabricante as f on f.codigo = p.codigo_fabricante order by precio limit 1;
+select p.nombre as producte, p.precio as preu, f.nombre as fabricant from producto p join fabricante f on f.codigo = p.codigo_fabricante where p.precio = (select MIN(precio) from producto);
 
 -- Retorna el nom del producte, el seu preu i el nom del seu fabricant, del producte més car.
-select p.nombre as 'Nombre producto', p.precio 'Precio producto', f.nombre 'Fabricante'from producto as p join fabricante as f on f.codigo = p.codigo_fabricante order by precio desc limit 1;
+select p.nombre as producte, p.precio as preu, f.nombre as fabricant from producto p join fabricante f on f.codigo = p.codigo_fabricante where p.precio = (select MAX(precio) from producto);
 
 -- Retorna una llista de tots els productes del fabricant Lenovo.
 select p.*, f.nombre from producto p join fabricante f on f.codigo = p.codigo_fabricante where f.nombre = 'Lenovo';
@@ -142,7 +142,7 @@ select * from persona where tipo = 'alumno' and fecha_nacimiento between '1999-0
 select * from persona where tipo = 'profesor' and telefono is null and nif like('%K');
 
 -- Retorna el llistat de les assignatures que s'imparteixen en el primer quadrimestre, en el tercer curs del grau que té l'identificador 7.
-select * from asignatura where  cuatrimestre = 2 and curso = 3 and id_grado = 7;
+select * from asignatura where  cuatrimestre = 1 and curso = 3 and id_grado = 7;
 
 -- Retorna un llistat dels professors/es juntament amb el nom del departament al qual estan vinculats. El llistat ha de retornar quatre columnes, primer cognom, segon cognom, nom i nom del departament. El resultat estarà ordenat alfabèticament de menor a major pels cognoms i el nom.
 select per.apellido1 as 'Primer Apellido', per.apellido2 as 'Segundo Apellido', per.nombre, dep.nombre from persona per join profesor pro on pro.id_profesor = per.id join departamento dep on pro.id_departamento = dep.id order by per.apellido1, per.apellido2, per.nombre;
@@ -176,7 +176,8 @@ select persona.nombre, persona.apellido1, persona.apellido2 from persona left jo
 select * from asignatura where id_profesor is null;
 
 -- Retorna un llistat amb tots els departaments que no han impartit assignatures en cap curs escolar.
-SELECT DISTINCT departamento.nombre FROM departamento LEFT JOIN profesor ON profesor.id_departamento = departamento.id LEFT JOIN asignatura ON asignatura.id_profesor = profesor.id_profesor LEFT JOIN alumno_se_matricula_asignatura ON alumno_se_matricula_asignatura.id_asignatura = asignatura.id WHERE alumno_se_matricula_asignatura.id_asignatura IS NULL;
+select d.nombre from departamento d left join profesor p on d.id = p.id_departamento left join asignatura a on p.id_profesor = a.id_profesor left join alumno_se_matricula_asignatura m on a.id = m.id_asignatura group by d.id, d.nombre having COUNT(m.id_asignatura) = 0;
+
 
 -- Consultes resum:
 -- Retorna el nombre total d'alumnes que hi ha.
@@ -209,15 +210,14 @@ select gr.nombre, sub.tipo, sum(sub.creditos) from grado gr  join asignatura sub
 
 -- Retorna un llistat que mostri quants alumnes s'han matriculat d'alguna assignatura en cadascun dels cursos escolars. 
 -- El resultat haurà de mostrar dues columnes, una columna amb l'any d'inici del curs escolar i una altra amb el nombre d'alumnes matriculats.
-select ce.anyo_inicio as 'Inicio Curso', count(am.id_alumno) as 'Alumnos matriculados' from curso_escolar ce join alumno_se_matricula_asignatura am on am.id_curso_escolar = ce.id group by ce.anyo_inicio;
+select  ce.anyo_inicio as 'Inicio Curso', count(distinct am.id_alumno) as 'Alumnos matriculados' from curso_escolar ce join alumno_se_matricula_asignatura am on am.id_curso_escolar = ce.id group by ce.anyo_inicio;
 
 -- Retorna un llistat amb el nombre d'assignatures que imparteix cada professor/a. El llistat ha de tenir en compte aquells professors/es que no imparteixen cap assignatura. 
 -- El resultat mostrarà cinc columnes: id, nom, primer cognom, segon cognom i nombre d'assignatures. El resultat estarà ordenat de major a menor pel nombre d'assignatures.
 select per.id, per.nombre, per.apellido1, per.apellido2, count(sub.id) as total_asignaturas from persona per left join asignatura sub on sub.id_profesor = per.id where per.tipo = 'profesor' group by per.id;
 
-
 -- Retorna totes les dades de l'alumne/a més jove.
-select * from persona where fecha_nacimiento = (select min(fecha_nacimiento) from persona);
+select * from persona where fecha_nacimiento = (select max(fecha_nacimiento) from persona);
 
 -- Retorna un llistat amb els professors/es que tenen un departament associat i que no imparteixen cap assignatura.
 select per.* from persona per join profesor pro on per.id = pro.id_profesor left join asignatura sub on pro.id_profesor = sub.id_profesor where sub.id_profesor is null;
